@@ -40,9 +40,11 @@ El sistema arranca con **4 proyectos, 5 responsables y 15 tareas de prueba**
 
 ### Orden de atención
 
-`Tarea.compareTo` ordena por **prioridad descendente** (CRITICA → ALTA → MEDIA →
-BAJA) y, si hay empate, por **código ascendente**. Por eso la `PriorityQueue`
-siempre deja al frente la tarea correcta.
+`Tarea.compareTo` ordena por **código ascendente**, igual que `equals`, para que
+ambas comparaciones sean coherentes. El orden por prioridad se define con el
+`Comparator` `SistemaGestionProyectos.POR_PRIORIDAD`: **prioridad descendente**
+(CRITICA → ALTA → MEDIA → BAJA) y, si hay empate, **código ascendente**. Por eso
+la `PriorityQueue` siempre deja al frente la tarea correcta.
 
 ### Consistencia entre colecciones
 
@@ -53,6 +55,11 @@ tarea en las estructuras afectadas. Así se evita:
 - claves viejas en el `Map`,
 - tareas desordenadas o duplicadas en el `TreeSet`,
 - elementos con prioridad desactualizada dentro de la `PriorityQueue`.
+
+La cola de prioridad se alimenta de forma **explícita** con la opción `9`. Si
+una tarea ya estaba encolada y se le cambia el código o la prioridad, el
+servicio conserva su lugar en la cola y la reinserta con el nuevo criterio. Si
+no estaba encolada, sigue fuera hasta que el usuario la encole.
 
 ---
 
@@ -132,8 +139,10 @@ java -cp out com.unicartagena.gestionproyectos.Main
 - Proyectos, responsables y tareas no duplicados (comparación sin distinguir
   mayúsculas).
 - Una tarea solo puede registrarse con un proyecto y un responsable existentes.
-- Solo las tareas en estado `PENDIENTE` entran a la cola de prioridad.
+- Solo las tareas en estado `PENDIENTE` se pueden encolar con la opción `9`.
 - Una tarea no puede encolarse dos veces.
+- La cola de prioridad de los datos de prueba arranca cargada; las tareas que
+  registra el usuario se encolan explícitamente con la opción `9`.
 - No se puede procesar una cola vacía.
 - Al cambiar el código no se permite chocar con otra tarea existente.
 - Entradas numéricas y enums validados con reintento en el menú.
@@ -147,7 +156,10 @@ java -cp out com.unicartagena.gestionproyectos.Main
 3. Opción `8` para comprobar el orden por código del `TreeSet`.
 4. Opción `10` y luego `11` varias veces: deben salir primero T001, T002 y T013
    (CRITICA), después las ALTA, luego MEDIA y por último BAJA.
-5. Opción `9` con una tarea ya encolada o ya procesada: debe rechazarla.
+5. Registrar una tarea nueva en estado `PENDIENTE` y usar la opción `9` para
+   encolarla; luego comprobar con la opción `10` que aparece según su prioridad.
+   Volver a ejecutar la opción `9` con esa misma tarea y verificar que la
+   rechaza por estar ya encolada.
 6. Opción `12` → `5`, subir T007 a CRITICA y comprobar con la opción `10` que
    cambia el orden de atención.
 7. Opción `12` → `2`, cambiar `T001` por `T100` y comprobar con las opciones
