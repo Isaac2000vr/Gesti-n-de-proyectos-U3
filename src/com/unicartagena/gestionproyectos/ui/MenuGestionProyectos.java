@@ -161,10 +161,14 @@ public class MenuGestionProyectos {
 
         System.out.println("Tarea registrada correctamente.");
         System.out.println(tarea);
-        System.out.println("La tarea quedó en la List, el Map y el TreeSet"
-                + (tarea.getEstado().estaPendiente()
-                        ? ", y también en la PriorityQueue."
-                        : "; no entró a la cola porque no está PENDIENTE."));
+        System.out.println("La tarea quedó registrada en la List, el Map y el TreeSet.");
+        if (tarea.getEstado().estaPendiente()) {
+            System.out.println("Está PENDIENTE: use la opción 9 para agregarla "
+                    + "a la cola de prioridad.");
+        } else {
+            System.out.println("No está PENDIENTE, así que no puede entrar "
+                    + "a la cola de prioridad.");
+        }
     }
 
     private void registrarProyecto() {

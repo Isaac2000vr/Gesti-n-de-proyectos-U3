@@ -8,10 +8,10 @@ import java.util.Locale;
  * <p>Una tarea pertenece a un proyecto, tiene un responsable, una prioridad
  * y un estado. El código es su identificador principal.</p>
  *
- * <p>El orden natural de las tareas es por prioridad descendente
- * (CRITICA antes que BAJA) y, en caso de empate, por código ascendente.
- * Ese orden es el que utiliza la {@code PriorityQueue} para decidir cuál
- * tarea debe procesarse primero.</p>
+ * <p>El orden natural de las tareas es por código ascendente, igual que su
+ * {@link #equals(Object)}, de modo que ambas comparaciones son coherentes.
+ * El orden por prioridad que necesita la cola de atención se define aparte
+ * con un {@code Comparator} en la capa de servicio.</p>
  */
 public class Tarea implements Comparable<Tarea> {
 
@@ -99,15 +99,11 @@ public class Tarea implements Comparable<Tarea> {
     }
 
     /**
-     * Orden natural: mayor prioridad primero y, si hay empate, código menor.
+     * Orden natural por código, coherente con {@link #equals(Object)}.
+     * La prioridad se maneja con un Comparator independiente en el servicio.
      */
     @Override
     public int compareTo(Tarea otra) {
-        int comparacionPrioridad = Integer.compare(
-                otra.prioridad.getNivel(), this.prioridad.getNivel());
-        if (comparacionPrioridad != 0) {
-            return comparacionPrioridad;
-        }
         return this.codigo.compareToIgnoreCase(otra.codigo);
     }
 

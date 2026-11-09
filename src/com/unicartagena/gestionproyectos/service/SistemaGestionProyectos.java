@@ -43,6 +43,16 @@ import java.util.TreeSet;
  */
 public class SistemaGestionProyectos {
 
+    /**
+     * Orden de atención de la cola: primero la prioridad más alta y, si hay
+     * empate, el código menor. Se usa un Comparator para no alterar el orden
+     * natural de {@link Tarea}, que debe seguir siendo coherente con equals.
+     */
+    public static final Comparator<Tarea> POR_PRIORIDAD =
+            Comparator.comparingInt((Tarea tarea) -> tarea.getPrioridad().getNivel())
+                    .reversed()
+                    .thenComparing(Tarea::getCodigo, String.CASE_INSENSITIVE_ORDER);
+
     private final List<Tarea> tareas;
     private final Map<String, Tarea> tareasPorCodigo;
     private final Set<Proyecto> proyectos;
@@ -57,7 +67,7 @@ public class SistemaGestionProyectos {
         this.responsables = new HashSet<>();
         this.tareasOrdenadasPorCodigo = new TreeSet<>(
                 Comparator.comparing(Tarea::getCodigo, String.CASE_INSENSITIVE_ORDER));
-        this.colaPrioridad = new PriorityQueue<>();
+        this.colaPrioridad = new PriorityQueue<>(POR_PRIORIDAD);
         cargarDatosDePrueba();
     }
 
@@ -117,6 +127,14 @@ public class SistemaGestionProyectos {
                 calidad, marta, Prioridad.MEDIA, EstadoTarea.CANCELADA));
         agregarTarea(new Tarea("T015", "Refactorizar módulo de clientes",
                 portal, luis, Prioridad.ALTA, EstadoTarea.PENDIENTE));
+
+        // Los datos de prueba arrancan con la cola ya cargada. Las tareas que
+        // registre el usuario se encolan explícitamente con la opción 9.
+        for (Tarea tarea : tareas) {
+            if (tarea.getEstado().estaPendiente()) {
+                colaPrioridad.add(tarea);
+            }
+        }
     }
 
     public void limpiarDatos() {
@@ -182,9 +200,7 @@ public class SistemaGestionProyectos {
         tareas.add(tarea);
         tareasPorCodigo.put(clave(tarea.getCodigo()), tarea);
         tareasOrdenadasPorCodigo.add(tarea);
-        if (tarea.getEstado().estaPendiente()) {
-            colaPrioridad.add(tarea);
-        }
+        // La cola de prioridad se alimenta de forma explícita con encolarTarea.
     }
 
     // ------------------------------------------------------------------
@@ -217,7 +233,7 @@ public class SistemaGestionProyectos {
      */
     public List<Tarea> listarColaPrioridad() {
         List<Tarea> lista = new ArrayList<>(colaPrioridad);
-        lista.sort(Comparator.naturalOrder());
+        lista.sort(POR_PRIORIDAD);
         return lista;
     }
 
@@ -315,10 +331,13 @@ public class SistemaGestionProyectos {
                     "Ya existe una tarea con el código " + nuevo + ".");
         }
 
-        boolean pendiente = tarea.getEstado().estaPendiente();
+        // Se conserva la pertenencia a la cola: si la tarea ya estaba encolada,
+        // se retira y se vuelve a insertar para que el nuevo código se refleje
+        // en el desempate. Si no estaba encolada, sigue fuera de la cola.
+        boolean estabaEnCola = colaPrioridad.contains(tarea);
 
         // Se retira de las colecciones que dependen del código antes de cambiarlo.
-        if (pendiente) {
+        if (estabaEnCola) {
             colaPrioridad.remove(tarea);
         }
         tareasOrdenadasPorCodigo.remove(tarea);
@@ -328,7 +347,7 @@ public class SistemaGestionProyectos {
 
         tareasPorCodigo.put(clave(tarea.getCodigo()), tarea);
         tareasOrdenadasPorCodigo.add(tarea);
-        if (pendiente) {
+        if (estabaEnCola) {
             colaPrioridad.add(tarea);
         }
     }
@@ -355,30 +374,33 @@ public class SistemaGestionProyectos {
 
     public void actualizarPrioridad(String codigo, Prioridad nuevaPrioridad) {
         Tarea tarea = obtenerTareaObligatoria(codigo);
-        boolean pendiente = tarea.getEstado().estaPendiente();
+        if (nuevaPrioridad == null) {
+            throw new IllegalArgumentException("La nueva prioridad no puede ser nula.");
+        }
 
         // La PriorityQueue debe reconstruirse si cambia el criterio de orden.
-        if (pendiente) {
+        boolean estabaEnCola = colaPrioridad.contains(tarea);
+        if (estabaEnCola) {
             colaPrioridad.remove(tarea);
         }
         tarea.setPrioridad(nuevaPrioridad);
-        if (pendiente) {
+        if (estabaEnCola) {
             colaPrioridad.add(tarea);
         }
     }
 
     public void actualizarEstado(String codigo, EstadoTarea nuevoEstado) {
         Tarea tarea = obtenerTareaObligatoria(codigo);
-        boolean estabaPendiente = tarea.getEstado().estaPendiente();
-        boolean seraPendiente = nuevoEstado.estaPendiente();
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException("El nuevo estado no puede ser nulo.");
+        }
 
-        if (estabaPendiente && !seraPendiente) {
+        // Una tarea que deja de estar PENDIENTE sale de la cola. Si vuelve a
+        // PENDIENTE, se encola explícitamente con la opción 9.
+        if (colaPrioridad.contains(tarea) && !nuevoEstado.estaPendiente()) {
             colaPrioridad.remove(tarea);
         }
         tarea.setEstado(nuevoEstado);
-        if (!estabaPendiente && seraPendiente) {
-            colaPrioridad.add(tarea);
-        }
     }
 
     public Tarea eliminarTarea(String codigo) {
