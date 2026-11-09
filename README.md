@@ -170,7 +170,17 @@ java -cp out com.unicartagena.gestionproyectos.Main
 
 ---
 
-## 8. Conclusión
+## 8. Verificaciones realizadas
+
+- Se ejecutaron **19 comprobaciones automáticas** sobre el servicio: cola inicial de 10 tareas, orden por prioridad y código, encolado explícito, rechazo de doble encolado, rechazo de tareas no pendientes y validación de prioridad/estado nulos.
+- Se comprobó que cambiar la prioridad o el código de una tarea encolada la conserva en la cola **una sola vez**.
+- Se comprobó que `compareTo` y `equals` son coherentes para tareas con el mismo código.
+- Se ejecutó el menú completo: registrar una tarea nueva, encolarla con la opción `9` y consultarla con la opción `10`.
+- El proyecto compila con `javac -encoding UTF-8 -Xlint:all`.
+
+---
+
+## 9. Conclusión
 
 El ejercicio muestra que cada colección responde a una necesidad distinta:
 `ArrayList` para recorrer, `HashMap` para buscar por clave, `Set` para evitar
